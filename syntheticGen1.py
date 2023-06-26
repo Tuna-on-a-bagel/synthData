@@ -6,9 +6,11 @@ import copy
 import time
 import random
 import sys
+import json
 
 import bmesh
 import mathutils
+
 
 sys.path.append("/home/tuna/Documents/driving/Vision/syntheticData/")
 from utils import blenderTools2 as bt
@@ -19,17 +21,18 @@ from utils import blenderTools2 as bt
     Current as of 06/22/2023
         Blender:    3.5
         python:     3.7
-        
+
+        associated files: buildDataSet5.py, applyBBox5.py
     
-        TODO: 
+        TODO:
             [X] figure out how to set object contraints easily
             [ ] verify that all refactor works with simple dataset
             [X] add compute time remaining to terminal output
             [X] set up domain randomization params, set up collections for each object
             [ ] figure out how to pull from material library through bpy
             [ ] add a key stroke break command
-            [ ] add render start warnings if things are missing ( eg, if Lighting DR is true but no lighting BBox active etc)
-          
+            [ ] add render start warnings if things are missing (eg, if Lighting DR is true but no lighting BBox active etc)
+
 '''
 
 
@@ -57,7 +60,7 @@ class lighting():
             except: self.dynamic[light.name]['intensityRange'] = None
 
         for light in bpy.data.collections['staticLights'].objects:
-
+            #weed out any erroneous 
             if light.instance_type != 'LIGHT': pass
             self.static.append(light)
 
@@ -70,13 +73,24 @@ class lighting():
         #break if light does not have intensity range set
         if self.dynamic[light.name]['intensityRange'] == None:
             return
-        
 
-        dr = domainRandomization['lighting']['intensity']['random']
+        randomType = domainRandomization['lighting']['intensity']['random']['method']
 
-        if dr['method'] == 'normal':
-            newIntensity = np.random.Generator.normal(loc=self.dynamic[light.name]['initIntensity'], scale=dr['sigma'])
+        low = self.dynamic[light.name]['intensityRange'][0]
+        high = self.dynamic[light.name]['intensityRange'][1]
 
+        #normal distribution
+        if randomType == 'normal':
+
+            sigmaMultiplier = domainRandomization['lighting']['intensity']['random']['sigma']
+            sigma = (high - low)*sigmaMultiplier
+
+            newIntensity = np.random.default_rng().normal(loc=self.dynamic[light.name]['initIntensity'], scale=sigma, size = 1)
+
+            #clamp to constraint limit
+            newIntensity = np.clip(newIntensity, low, high)
+
+        #uniform distribution
         else:
             low = self.dynamic[light.name]['intensityRange'][0]
             high = self.dynamic[light.name]['intensityRange'][1]
@@ -96,8 +110,8 @@ class camera():
         self.initRot = copy.copy(bpy.data.objects['camera'].rotation_euler)
         self.constraint = bpy.data.objects['camera.constraint']
         self.tracker = bpy.data.objects['camera.focalPt']
-        self.translationPostions = None
-        self.rotationPostions = None
+        self.translationPostions = []
+        self.rotationPostions = []
 
     def toggleTracking(self):
 
@@ -132,67 +146,66 @@ class classifications():
         #iterate through objects looking for ones with a classification
         for obj in bpy.data.objects:
             count = 1
-            check = 0 
+           
             try:
                 obj.data[f'1.classLabel']
                 self.classObjects[obj.name] = dict()
 
-                print(f'found a classification for {obj.name}')
-
+                #look through object data in blender class, search for all classifications associated with part
                 while True:
                     try:
-
                         label = obj.data[f'{count}.classLabel']
-                        check = 1
-                        split = obj.data[f'{count}.split']      #float
-                        
-                        check = 2
-                        constraintID = obj.data[f'{count}.constraint']              #<string> should be the name of an object in the scene
-
-                        if constraintID != '<objectID>': constraintObj = bpy.data.objects[constraintID]     #if the user defined this, look for that object and save the pointer
-                        else: constraintObj = None
-                        check = 3
-
-                        customBBoxID =  obj.data[f'{count}.customBBox']
-
-                        if customBBoxID != '<objectID>': customBBoxObj = bpy.data.objects[customBBoxID]
-                        else: customBBoxObj = None
-                        check = 4
-                        
-                        partDependencyID = obj.data[f'{count}.partDependency']
-
-                        if partDependencyID != '<objectID>': partDependencyObj = bpy.data.objects[partDependencyID]
-                        else: partDependencyObj = None
-                        check = 5
-
-                        dependencyConstraintID = obj.data[f'{count}.dependencyConstraint']
-
-                        if dependencyConstraintID != '<Path, Plane, or Volume ID>': dependencyConstraintObj = bpy.data.objects[dependencyConstraintID]
-                        else: dependencyConstraintObj = None
-                        check = 6
-                        self.classObjects[obj.name][count] = {
-                                                                'label':                label,
-                                                                'split':                split,
-                                                                'constraint':           constraintObj,
-                                                                'positions':            [],
-                                                                'customBBox':           customBBoxObj,
-
-                                                                'partDependency':       partDependencyObj,
-                                                                'dependencyConstraint': dependencyConstraintObj,
-                                                                'dependencyPositions':  []
-                                                                }
-                        check = 7
-                       
-                        count += 1
+                        if label == '<Any>':
+                            print(f'found class for {obj.name} but no label defined')
+                            break
+                    except:
+                        break  
                     
-                    except: 
-                        if check != 7: 
-                            print('failed to build proper classification dict')
-                            print(f'failed on {check}')
-
+                    split = obj.data[f'{count}.split']      #float
+                    if not 0 < split <= 1:
+                        print(f'found class for {obj.name} with no split defined, must define split value (0., 1.]')
                         break
 
-            except: pass            
+                    constraintID = obj.data[f'{count}.constraint']              #<string> should be the name of an object in the scene
+                    if constraintID != '<objectID>': constraintObj = bpy.data.objects[constraintID]     #if the user defined this, look for that object and save the pointer
+                    else: constraintObj = None
+                
+
+                    customBBoxID =  obj.data[f'{count}.customBBox']
+                    if customBBoxID != '<objectID>': customBBoxObj = bpy.data.objects[customBBoxID]
+                    else: customBBoxObj = None
+                
+            
+                    partDependencyID = obj.data[f'{count}.partDependency']
+                    if partDependencyID != '<objectID>': partDependencyObj = bpy.data.objects[partDependencyID]
+                    else: partDependencyObj = None
+                
+                    dependencyConstraintID = obj.data[f'{count}.dependencyConstraint']
+                    if dependencyConstraintID != '<Path, Plane, or Volume ID>': dependencyConstraintObj = bpy.data.objects[dependencyConstraintID]
+                    else: 
+                        dependencyConstraintObj = None
+                        if partDependencyObj == None:
+                            print('Warning: part dependency defined but no dependency constraint provided')
+                            break
+
+                    self.classObjects[obj.name][count] = {
+                                                            'label':                label,
+                                                            'split':                split,
+                                                            'constraint':           constraintObj,
+                                                            'positions':            [],
+                                                            'customBBox':           customBBoxObj,
+
+                                                            'partDependency':       partDependencyObj,
+                                                            'dependencyConstraint': dependencyConstraintObj,
+                                                            'dependencyPositions':  []
+                                                            }
+                    
+                    
+                    count += 1
+                
+            except: pass  
+
+              
 
 
 class objects():
@@ -202,12 +215,12 @@ class objects():
         self.static = []
         self.dynamic = dict()
         
-        for object in bpy.data.collections['dynamicParts'].objects:
+        for obj in bpy.data.collections['dynamicParts'].objects:
 
-            self.dynamic[object.name] = {
-                                            'initLoc':      object.location,
-                                            'initRot':      object.rotation_euler,
-                                            'material':     object.data.materials
+            self.dynamic[obj.name] = {
+                                            'initLoc':      copy.copy(obj.location),
+                                            'initRot':      copy.copy(obj.rotation_euler),
+                                            'material':     obj.data.materials
                                         }
             
 
@@ -215,7 +228,14 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     print('')
     
     #debugging
-    file = open("/home/tuna/Documents/driving/Vision/syntheticData/bpyTest.txt", 'w')
+    debugFile = open("/home/tuna/Documents/driving/Vision/syntheticData/bpyTest.txt", 'w')
+
+    file = open(paths['csv'] + paths['fileName'] + ".csv", "w")
+    data = csv.writer(file)
+
+    #top row column names
+    labelID = ["use", "fileName", "classification", "xMin", "yMin", None, None, "xMax", "yMax", None, None, "camX", "camY", "camZ"]
+    data.writerow(labelID)
 
     renderCount = renderInfo['count']  #int
 
@@ -232,6 +252,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 
     objs = objects()
     classObjs = classifications()
+   
 
     
     ##############################################
@@ -239,7 +260,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     ##############################################
 
     lights = lighting()
-    
+     
     #async io terminate process task
     
 
@@ -248,21 +269,51 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     ############################################
 
     cam = camera()
+   
 
-    #turn tracking on
+    #check and handle tracking
     if cameraParams['tracking']['active']: 
         cam.toggleTracking()
 
-    #generate camera trasnlational postions
+    #generate dynamic camera translation positions
     if cameraParams['translation']['active']:
-            randomType = cameraParams['translation']['random']['method']
-            cam.translationPostions = bt.generatePositions(constraintObj=   cam.constraint, 
-                                                            dynamicObj=     cam.cam, 
-                                                            randomType=     randomType, 
-                                                            count=          renderCount
-                                                            )
+        randomType = cameraParams['translation']['random']['method']
+        print('gen positions T')
+        cam.translationPostions = bt.generatePositions(constraintObj=      cam.constraint, 
+                                                        dynamicObj=     cam.cam, 
+                                                        randomType=     randomType, 
+                                                        count=          renderCount
+                                                        )
+        #storing positions for description json
+        cameraParams['translation']['positions'] = cam.translationPostions
+    
+    #generate static camera positions
+    elif not cameraParams['translation']['active']:
+        for i in range(renderCount):
+            cam.translationPostions.append(cam.initLoc)
+        #storing positions for description json
+        cameraParams['translation']['positions'] = cam.translationPostions
 
-    file = open('/home/tuna/Documents/driving/Vision/syntheticData/bpyTest.txt', 'w')
+    #generate dynamic camera rotations
+    if cameraParams['rotation']['active']:
+        randomType = cameraParams['rotation']['random']['method']
+        constraint = cameraParams['rotation']['constraint']
+        cam.rotationPostions = bt.generateRotations(constraint=         constraint, 
+                                                    dynamicObj=         cam.cam, 
+                                                    randomType=         randomType, 
+                                                    count=              renderCount
+                                                    )
+        #store positions for description json
+        cameraParams['rotation']['positions'] = cam.rotationPostions
+    
+    #generate static camera rotations
+    elif not cameraParams['rotation']['active']:
+        for i in range(renderCount):
+            cam.rotationPostions.append(cam.initRot)
+        #storing positions for description json
+        cameraParams['rotation']['positions'] = cam.rotationPostions
+
+    
 
     '''TODO:
 
@@ -294,24 +345,63 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             [X] time remaining estimator
 
         fri(06/23)
-            [ ] get camera moving
-                [ ] normal distribution
+            [X] get camera moving
+                [x] normal distribution
+
             [ ] get camera rotating
-                [ ] add rotation to generated postions
-                [ ] uniform
+                [x] add rotation to generated postions
+                [x] uniform
                 [ ] normal 
-            [ ] lighting intensity
-                [ ] normal
+                [x] handle tracking constraint vs free
+
+            [X] lighting intensity
+                [x] normal
+
+            [ ] Join descripting dictionaries into single json file for later review
+                [x] configure camera parameter dict
+                    [x] define all params
+                    [x] update all params in render
+                [ ] configure classification dict
+                    [ ] define all params
+                    [ ] update all params in render
+                [ ] configure lighting dict
+                    [ ] define all params
+                    [ ] update all params in render
+                [ ] configure domain randomization dict
+                    [x] define all params
+                    [ ] update all params in render
+
+            [ ] figure out how to search through root dir for datasets that meet certain criteria
+        
+        mon(06/26)
+            - found issue with camera box
+                [ ] debug infinite loop issue with normal distribution on camera positions in blenderTools
+            [X] built more realistic scene
+            [X] added volume constraints for class objects
+            [X] render 10 image data set with proper splits
+            [ ] add check warning or some sort of logic to handle render count split rounding
+            [X] check bounding boxes with custom bounding box dependencies
+            [X] fix return to home bug
+            [ ] build new adas dataset
+            [ ] train new model
              
                 '''
 
     #loop through all classification objects, detirmine positions for each render
+    
     for objName in classObjs.classObjects.keys():
 
-        for idx, klass in enumerate(classObjs.classObjects[objName].keys()):
+        for klass in classObjs.classObjects[objName].keys():
 
             #identify klassification parameters
-            dependencyConstraint = classObjs.classObjects[objName][klass]['dependencyConstraint']   #object pointer
+            try:
+                #if a constraint is provided we assume part should move
+                dependencyConstraint = classObjs.classObjects[objName][klass]['dependencyConstraint']   #object pointer
+
+            except:
+                #else it will be static
+                dependencyConstraint = None
+
             dependency = classObjs.classObjects[objName][klass]['partDependency']                   #object pointer
             split = classObjs.classObjects[objName][klass]['split']                                 #float
 
@@ -319,7 +409,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             numOfPositions = int(renderCount * split)           #int
 
             #detirmine positions
-            points = bt.generatePositions(constraintObj=   dependencyConstraint,
+            points = bt.generatePositions(constraintObj=    dependencyConstraint,
                                            dynamicObj=      dependency, 
                                            randomType=      'uniform',  
                                            count=           numOfPositions)
@@ -328,23 +418,26 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             classObjs.classObjects[objName][klass]['dependencyPositions'] = points  
 
             #debugging
-            file.write(f'index: {objName} \n')
-            file.write(f'klass: {klass} \n')
-            file.write(f'numOfPos: {numOfPositions} \n')
-            file.write(f'positions: {points} \n')
-            file.write('\n')
-    file.close()
+            debugFile.write(f'index: {objName} \n')
+            debugFile.write(f'klass: {klass} \n')
+            debugFile.write(f'numOfPos: {numOfPositions} \n')
+            debugFile.write(f'positions: {points} \n')
+            debugFile.write('\n')
+    debugFile.close()
 
 
-    setCoordinates = [] #array storing projection coordinates of each object in every frame
+    #setCoordinates = [] #array storing projection coordinates of each object in every frame
+    setCoordinates = []
 
-
+    ### MAIN RENDER LOOP ###
     for i in range(renderCount):
 
         startTime = time.time()
 
-        cam.cam.location = cam.translationPostions[i]
-        #TODO: add cam rotations
+        cam.cam.location = copy.copy(cam.translationPostions[i])
+
+        #NOTE: if cameraParams['tracking']['active'], camera will auto rotate to tracking position first, then we can apply a rotation op after wards
+        cam.cam.rotation_euler = copy.copy(cam.rotationPostions[i])
 
 
 
@@ -355,7 +448,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             coord = bt.generatePositions(constraintObj= lights.dynamic[lightName]['constraint'],
                                          dynamicObj= light,
                                          randomType= domainRandomization['lighting']['translation']['random']['method'],
-                                         count=1
+                                         count= 1
                                          )
             bt.updateAbsPosition(light, coord, 0)
 
@@ -364,8 +457,9 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 
         #loop through all objects with classifications
         for object in classObjs.classObjects.keys():
+           
 
-            klassifications = list(classObjs.classObjects[object].keys())   #list of strings
+            klassifications = list(classObjs.classObjects[object].keys())   #list of integers
             split = 0
 
             #loop through each class, detirmine which class is current split
@@ -383,6 +477,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             dependency = classObjs.classObjects[object][klass]['partDependency']    #object pointer
 
             #new position
+            print(f"len(positions):{len(classObjs.classObjects[object][klass]['dependencyPositions'])}, current index(i - idxshift): {i - idxShift}")
             position = classObjs.classObjects[object][klass]['dependencyPositions'][i - idxShift]   #[x, y, z]
 
             #update position of the object
@@ -391,40 +486,50 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             #Logic to handle custom bboxes for vert projections
             if classObjs.classObjects[object][klass]['customBBox']:
                 obj = classObjs.classObjects[object][klass]['customBBox']
-                #print('found custom bbox')
+                
             else:
                 obj = bpy.data.objects[object]
-                #print('no custom bbox detected')
 
-            #convert vertecies to image plane
+            #project 3D vertecies to 2D image plane
             imageCoordinates = bt.convertVertices(scene, cam.cam, obj, res_x, res_y)
 
             #append projected vertecies of each object to the image array
             frameCoordinates.append(imageCoordinates)
+
+            #classification label
+            label = classObjs.classObjects[object][klass]['label']
+
+            #write instance to csv                                         Ax    Ay    Bx    By    Cx    Cy    Dx    Dy
+            instance = [None, str(i) + paths['fileName'] + ".png", label, None, None, None, None, None, None, None, None, cam.cam.location.x, cam.cam.location.y, cam.cam.location.z]
+            data.writerow(instance)
             
         #append image array to full render set array
         setCoordinates.append(frameCoordinates)    
 
         #render
         bpy.ops.render.render(write_still=True)
-        bpy.data.images['Render Result'].save_render(paths['renders'] + paths['fileName'] + str(i) + ".png", scene=bpy.context.scene)
+        bpy.data.images['Render Result'].save_render(paths['renders'] + str(i) + paths['fileName'] + ".png", scene=bpy.context.scene)
 
         endTime = time.time()
         iterElapsed = endTime - startTime
 
         _, remainingBar, estimate = bt.timeRemaining(renderCount=renderCount, currentIter=i, iterElapsed=iterElapsed)
         print('')
-        print(f'{estimate}      completion: {remainingBar}')
+        print(f'completion: {remainingBar}      {estimate}')
 
+        #update tracking positions
+        cameraParams['tracking']['positions'].append(cam.tracker.location)
+        cameraParams['pose'].append([cam.cam.location, cam.cam.rotation_euler])
+
+    np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
     np.save(paths['projectionMat'] + paths['fileName'] + '.npy', setCoordinates)
-
-
 
     #return objects home
     for obj in objs.dynamic.keys():
         part = bpy.data.objects[obj]
         initLoc = objs.dynamic[obj]['initLoc']
         bt.updateAbsPosition(part, [initLoc], 0)
+        print(f'sent {part.name} to home')
 
     #return Lights Home
     for lightName in lights.dynamic.keys():
@@ -432,8 +537,16 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
         light.data.energy = lights.dynamic[lightName]['initIntensity']
         bt.updateAbsPosition(light, [lights.dynamic[lightName]['initLoc']], 0)
 
-    bt.updateAbsPosition(cam.cam, [cam.initLoc], 0)
+    #return camera home
+    cam.cam.location = cam.initLoc
+    cam.cam.rotation_euler = cam.initRot
 
+    #data descriptions
+    description = dict()
+    description['cameraParameters'] = cameraParams
+    description['domainRandomization'] = domainRandomization
+
+    file.close()
 
     print("===============================================")
 
@@ -446,25 +559,6 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     camInitCart = copy.copy([cam.location.x, cam.location.y, cam.location.z])
     camInitSphere = bt.cart2Sphere([camInitCart[0], camInitCart[1], camInitCart[2]])
     r, theta, phi = camInitSphere[0], camInitSphere[1], camInitSphere[2]
-
-    camBoundingCubeOuter = bpy.data.objects['CamTranslationBoundingCubeOuter']
-    camBoundsouter = bt.getCartesianBounds(camBoundingCubeOuter)
-    camTransLimits = [abs(camBoundsouter[0][1] - camBoundsouter[0][0]),
-                      abs(camBoundsouter[1][1] - camBoundsouter[1][0]),
-                      abs(camBoundsouter[2][1] - camBoundsouter[2][0])]
-    #generate normal distribution of camera coords around intial location
-    camPositions = [[], [], [], [], []] #[[x], [y], [z], [theta], [phi]]
-    camPositions[0] = np.random.default_rng().normal(loc=0, scale=camTransLimits[0]/4, size=renderCount)
-    camPositions[1] = np.random.default_rng().normal(loc=0, scale=camTransLimits[1]/4, size=renderCount)
-    camPositions[2] = np.random.default_rng().normal(loc=0, scale=camTransLimits[2]/4, size=renderCount)
-    camPositions[3] = np.random.default_rng().normal(loc=0, scale=cameraRotLimits[0]/4, size=renderCount)
-    camPositions[4] = np.random.default_rng().normal(loc=0, scale=cameraRotLimits[1]/4, size=renderCount)
-    #restrain to limits
-    camPositions[0] = np.clip(camPositions[0], -camTransLimits[0],  camTransLimits[0])
-    camPositions[1] = np.clip(camPositions[1], -camTransLimits[1],  camTransLimits[1])
-    camPositions[2] = np.clip(camPositions[2], -camTransLimits[2],  camTransLimits[2])
-    camPositions[3] = np.clip(camPositions[0], -cameraRotLimits[0], cameraRotLimits[0])
-    camPositions[4] = np.clip(camPositions[1], -cameraRotLimits[1], cameraRotLimits[1])
     
     file = open(csvPath + fileName + ".csv", "w")
     data = csv.writer(file)
@@ -513,52 +607,66 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 
 if __name__ == "__main__":
 
-
-
     renders = dict({
                     'count':    10,
                     })
     
     paths = dict()
-    paths['fileName'] =     'synthGenT1'
-    paths['root'] =         '/home/tuna/Documents/driving/Vision/syntheticData/dataSets/RCM/' + paths['fileName'] + '/'
+    paths['fileName'] =     'synthGenT3'
+    paths['root'] =         '/home/tuna/Documents/driving/Vision/syntheticData/dataSets/ADAS/' + paths['fileName'] + '/'
     paths['renders'] =      paths['root'] + 'renders/'
     paths['csv'] =          paths['root'] + 'csvFile/'
     paths['jsonFile']=      paths['root'] + 'jsonFile/'
     paths['projectionMat']= paths['root'] + 'projectionMat/'
+    paths['descriptionJson']= paths['root'] + 'descriptionJson/'
                   
     
                                                                                         # Parameter Options           Discription
                                                                                         ##########################    #############################################################
 
     cameraParams = dict({
+                        'properties':
+                                {
+                                'monocular/stereo': 'monocular',                        # [<'monocular'>, <'stereo'>]
+                                "baselineDist":     0,                                  # [<float>] 
+                                'focalLength_mm':   25.,                                # [<float>]
+                                'sensorWidth_mm':   12.8,                               # [<float>]
+                                'sensorHeight_mm':  9.6                                 # [<float>]
+                                },
+
                         'tracking':    
                                 {
-                                'active':          False                                # [<True>, <False>]           if set to True, camera will track bpy.data.objects['cameratrackingPoint']
+                                'active':           False,                              # [<True>, <False>]           if set to True, camera will track bpy.data.objects['cameratrackingPoint']
+                                'positions':        []                                  # [None]                      will be used to store coordinates of tracking point for description json
                                 },                  
                     
                         'translation': 
                                 {
-                                'active':          True,
+                                'active':           True,                               # [<True>, <False>]           if set to True, camera translate within constraint **must have a constraint**
                                 'random':          
                                     { 
-                                    'method':  'uniform',                               # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
-                                    'mean':    'initLoc',                               # [<'intiLoc'>]               centered at intial location **only used for noraml distribution**
-                                    'sigma':   1/3                                      # [<Float>]                   variance for normal distribution sampling **only used for noraml distribution**
-                                    }
+                                    'method':       'uniform',                           # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
+                                    'mean':         'initLoc',                          # [<'intiLoc'>]               centered at intial location **only used for noraml distribution**
+                                    'sigma':        1/3                                 # [<Float>]                   variance for normal distribution sampling **only used for noraml distribution**
+                                    },
                                 },
 
                         'rotation':    
                                 {
-                                'active':          False,                               # [<True>, <False>]           if set to True, camera will include rotation in randomization
-                                'constraint':      [np.pi/6, np.pi/10, 0],              # [<theta>, <phi>, <psi>]     **only used for normal distribution**
+                                'active':           False,                               # [<True>, <False>]           if set to True, camera will include rotation in randomization
+                                'constraint':       [                                   #                             **only used for normal distribution**
+                                                    (-np.pi/6, np.pi/6),                # [(<float>, <float>)]        theta limits 
+                                                    (-np.pi/10, np.pi/10),              # [(<float>, <float>)]        phi limits
+                                                    (0., 0.)                            # [(<float>, <float>)]        psi limits
+                                                    ],               
                                 'random':          
                                         { 
-                                        'method':  'normal',                            # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
-                                        'mean':    'initLoc',                           # [<'intiLoc'>]               centered at intial rotation **only used for noraml distribution**
-                                        'sigma':   1/3                                  # [<Float>]                   variance for normal distribution sampling **only used for noraml distribution**
-                                        }
-                                }
+                                        'method':   'uniform',                          # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
+                                        'mean':     'initLoc',                          # [<'intiLoc'>]               centered at intial rotation, NOTE: if tracking is active, camera rotations will auto over ride the initLoc mean and will be applied after tracking rotation
+                                        'sigma':    1/3                                 # [<Float>]                   variance for normal distribution sampling **only used for noraml distribution**
+                                        },
+                                },
+                        'pose':                     []                                  # [[<floats>], [<floats>]]    [[x, y, z], [theta, phi, psi]]    will be used to store pose information for description json
                         })
 
 
@@ -582,8 +690,8 @@ if __name__ == "__main__":
                                                 {
                                                 'random':    
                                                     {
-                                                    'method':   'uniform',              # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
-                                                    'mean':     None,                   # [<'intiLoc'>]               centered at intial location **only used for noraml distribution**
+                                                    'method':   'normal',               # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
+                                                    'mean':     'initLoc',              # [<'intiLoc'>]               centered at intial location **only used for noraml distribution**
                                                     'sigma':    1/3                     # [<Float>]                   variance for normal distribution sampling **only used for noraml distribution**
                                                     },
                                                 }
@@ -592,22 +700,36 @@ if __name__ == "__main__":
                                 'material':                                             # '''NOT IMPLEMENTED'''       Control material randomization of objects
                                         {
                                         'active':           True,                       # [<True>, <False>]  
-                                        'assetDir':         None                        # [<None>, <Path_to_assets>]  None: pulls from default environment assets, or supply path to custom asset folder  
+                                        'assetRootDir':     None                        # [<None>, <Path_to_assets>]  None: pulls from default environment assets, or supply path to custom asset folder  
                                         },                  
 
                                 'color':                                                # '''NOT IMPLEMENTED'''
                                         {
                                         'active':           True,                       # [<True>, <False>] 
-                                        'HSL_range':        False,                      # [<[[H_min,H_max],[S_min,S_max],[L_min,L_max]]>, <False>]   if not false, HSL values will be random uniform sleected from provided ranges
+                                        'HSL_range':        False,                      # [<[[H_min,H_max],[S_min,S_max],[L_min,L_max]]>, <False>]   if not false, HSL values will be random uniform selected from provided ranges
                                         'colorDir':         None                        # [<Path_to_color.txt>]
                                         },
 
                                 'environment':                                          # '''NOT IMPLEMENTED'''
                                         {
-                                        'dust':             True,
+                                        'dust':             False,
                                         'abrasion':         False
                                         }               
                             })
+
+    generalinfo = dict({
+                        'source':               "synthetic-gen",
+                        'part':                 "ADAS-ECU",
+
+                        'path_to_blendFile':    None,
+
+                        'renderMethod':         'cycles',
+                        'resolution_px':        760,
+                        'resolution_py':        556,
+
+                        'imageIDs':             []                                      #                               list of image names
+                            
+    })
 
 
     main(renderInfo=            renders,
