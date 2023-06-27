@@ -440,6 +440,81 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
         cam.cam.rotation_euler = copy.copy(cam.rotationPostions[i])
 
 
+        if domainRandomization['material']['active']:
+            for obj in bpy.data.objects:
+                if len(obj.material_slots) > 1:
+                    bpy.ops.object.select_all(action='DESELECT')
+
+                    obj.select_set(True)
+                    #bpy.ops.object.editmode_toggle()
+
+                    #select random material from existin slots
+                    idx = random.randint(1, (len(obj.material_slots) - 1))
+                    holder = []
+                    holder.append(obj.material_slots[idx].material)
+
+                    for j in range(len(obj.material_slots)):
+                        if j != idx:
+                            holder.append(obj.material_slots[j].material)
+
+                    obj.material_slots[0].material = holder[0]
+
+                    for j in range(1, len(obj.material_slots)):
+                        obj.material_slots[j].material = holder[j]
+
+
+
+
+
+
+                    '''
+                    newMaterial = obj.material_slots[idx].material
+
+                    #move existing entries down
+                    for i in range(1, idx):
+                        obj.material_slots[idx - i].material = obj.material_slots[idx - (i + 1)].material
+                    
+                    #assign 0 slot to new material
+                    obj.material_slots[0].material = newMaterial
+                    '''
+                    
+
+                    #bpy.context.object.active_material_index = idx
+                    #bpy.ops.object.material_slot_select()
+                    #bpy.ops.object.editmode_toggle()
+                    #bpy.ops.object.select_all(action='DESELECT')
+                    #build holder list
+                    holder = []
+                    #for i in range(len(obj.material_slots)):
+                    #    holder.append(obj.material_slots[i])
+
+                    #random.shuffle(holder)
+
+                    #reorder 
+                    #for i in range(len(obj.material_slots)):
+                    #    obj.material_slots[i] = holder[i]
+                    
+
+                    iter = 0
+
+
+                    ## lets make a holder copy list, then reorder the actual positions from this holder list
+
+
+
+                    '''
+                    while obj.material_slots[0] != obj.active_material:
+                        bpy.ops.object.material_slot_move(direction='UP')
+                        iter+=1
+                        if iter >= len(obj.material_slots):
+                            break
+                    '''   
+                    bpy.ops.object.select_all(action='DESELECT')
+                    
+                    #NOTE: there exists bpy.ops.object.material_slot_select() which should make a desired material the active one, however this errors on my version, \
+                    #        therefore resorting to reordering loop as insert doesnt work
+                     
+
 
         for lightName in lights.dynamic.keys():
             light = bpy.data.objects[lightName]
@@ -458,7 +533,6 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
         #loop through all objects with classifications
         for object in classObjs.classObjects.keys():
            
-
             klassifications = list(classObjs.classObjects[object].keys())   #list of integers
             split = 0
 
@@ -477,7 +551,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             dependency = classObjs.classObjects[object][klass]['partDependency']    #object pointer
 
             #new position
-            print(f"len(positions):{len(classObjs.classObjects[object][klass]['dependencyPositions'])}, current index(i - idxshift): {i - idxShift}")
+            #print(f"len(positions):{len(classObjs.classObjects[object][klass]['dependencyPositions'])}, current index(i - idxshift): {i - idxShift}")
             position = classObjs.classObjects[object][klass]['dependencyPositions'][i - idxShift]   #[x, y, z]
 
             #update position of the object
@@ -529,7 +603,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
         part = bpy.data.objects[obj]
         initLoc = objs.dynamic[obj]['initLoc']
         bt.updateAbsPosition(part, [initLoc], 0)
-        print(f'sent {part.name} to home')
+        #print(f'sent {part.name} to home')
 
     #return Lights Home
     for lightName in lights.dynamic.keys():
@@ -608,7 +682,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 if __name__ == "__main__":
 
     renders = dict({
-                    'count':    10,
+                    'count':    20,
                     })
     
     paths = dict()
