@@ -49,15 +49,15 @@ This file handles the majority of the generation procedures
 
 ## blenderTools.py:
 
-**convertVertices():** Project some set of 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane
+**convertVertices():** Project some set of world 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane
 
-| Parameters | Description | type | Returns | Description | 
+| Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | 
-| `scene` | bpy.context.scene | bpy struct | something | something |
-| `cam` | camera object | bpy struct | something | something |
-| `obj` | object of interest | bpy struct | something | something |
-| `resolutionX` | # of pixels | int | something | something |
-| `resolutionY` | # of pixels | int | something | something |
+| `scene` | bpy.context.scene | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
+| `cam` | camera object | bpy struct |  |  |  |
+| `obj` | object of interest | bpy struct |  |  |  |
+| `resolutionX` | # of pixels | int() |  |  |  |
+| `resolutionY` | # of pixels | int() |  |  |  |
 
 
 ## Blender / bpy usage:
