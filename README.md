@@ -49,9 +49,9 @@ This file handles the majority of the generation procedures
 
 ## blenderTools.py:
 
-| function handle | Description | Parameters | Type | Returns | Type |
-| --------------- | ----------- | ---------- | ---- | ------- | ---- |
-| `convertVertices()` | Project some set of 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane | scene = bpy.context.scene \\ cam = blender camera object \\ obj = blender object \\ resolutionX = pixelCount X \\ resolutionY = pixelCount Y | `1e-6` |  
+| function handle | Description | Parameters | Returns | 
+| --------------- | ----------- | ---------- | ------- | 
+| `convertVertices()` | Project some set of 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane | scene = bpy.context.scene \ cam = blender camera object \ obj = blender object \ resolutionX = pixelCount X \ resolutionY = pixelCount Y | `1e-6` |  
 
 
 ## Blender / bpy usage:
