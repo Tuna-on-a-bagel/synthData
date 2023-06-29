@@ -53,26 +53,23 @@ _static_:   an object, light, or camera that will not move through out entire da
 
 _dynamic_:  an object, light, or camera that will have some type of movement or variation through out data generation
 
-- For parts to move (translate) **via random generation** they must have some kind of constrraint object associated with them. This can be a 
+* For parts to move (translate) _**via random generation**_ they must have some kind of constrraint object associated with them. This can be a 
 'CURVE', 'PLANE', or 'MESH'. If no constraint is identified, the part will not transalte through out the process. You do NOT need to define a 
 constraint in order to move a part manually, this is only required for random position gneration. 
 
-- Dynamic parts also have the ability to transform their features. Objects may be given multiple material slots that can be randomly selected
+* Dynamic parts also have the ability to transform their features. Objects may be given multiple material slots that can be randomly selected
     to decrease reliance on color or texture patterns. Lights can be given an intensity range constraint so that they can change how bright 
     the source is on each iteration
 
-child:          An object that is dependently paired to another (parent) object. When the child is selected and moved, no changes occur to the
-                parent object. When
-                        the parent object is selected and moved, the child object will also match the parents transformation. to make a desired object or objects children
-                        of another part, you must multiselect them all FIRST, the multiselect the parent object LAST, from the gui: <>right click, >parent, >object
+_child_:    An object that is dependently paired to another (parent) object. When the child is selected and moved, no changes occur to the
+            parent object. When the parent object is selected and moved, the child object will also match the parents transformation. to make a desired object or objects children of another part, you must multiselect them all FIRST, the multiselect the parent object LAST, from the gui: >right click, >parent, >object
 
 
-        parent:         An object that is independently paired to another (child) object. When the parent object is selected and moved, all child objects will match 
-                        that transformation. To make an object a parent fromm the gui, you must multi select that object LAST, <>right click, >parent, >object
+_parent_:   An object that is independently paired to another (child) object. When the parent object is selected and moved, all child
+            objects will match that transformation. To make an object a parent fromm the gui, you must multi select that object LAST, >right click, >parent, >object
 
-            child/parent example:
-
-                        All wires on an electronic connector are made children of the connector interface object. This way, we can constrain and move just the connector intterface
+* child/parent example: All wires on an electronic connector are made children of the connector interface object. This way, we can constrain and
+                        move just the connector intterface
                         object (the parent), apply trasnformations to just this object, and all children will respond with the same transofrmations. This is handled in blender native
                         c++ behind the scenes and is much more efficient than implementing through python
 
