@@ -1,4 +1,3 @@
-
 SynthGen1 Usage:
 
     The main goal of this tool is to provide a structure of handling objects within a scene that is ideal for data generation with desirable traits
@@ -6,7 +5,7 @@ SynthGen1 Usage:
     NOTE: Before you run this file, you must run spawnDirs.py to create the directory structure neccessary for saving file types
 
 --------------------------------------------------------------------------------------------------------------------------------------------------  
-    Main file Parameters:
+    Main file Parameters: 
                                                 # Parameter Options             Discription
                                                 ##########################      #############################################################
         renders
