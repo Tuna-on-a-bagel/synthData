@@ -51,7 +51,7 @@ This file handles the majority of the generation procedures
 
 | function handle | Description | Parameters | Returns | 
 | --------------- | ----------- | ---------- | ------- | 
-| `convertVertices()` | Project some set of 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane | scene = bpy.context.scene <br> cam = blender camera object <br> obj = blender object <br> resolutionX = pixelCount X <br> resolutionY = pixelCount Y | `1e-6` |  
+| `convertVertices()` | Project some set of 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane | `scene` bpy.context.scene  <br>  `cam` blender camera object  <br>  `obj` blender object  <br>  `resolutionX` pixelCount X  <br>  `resolutionY` pixelCount Y | `1e-6` |  
 
 
 ## Blender / bpy usage:
