@@ -1,14 +1,15 @@
 # Synthetic Data generation overview
 
 Blender version:    3.6.0
+
 Python Version:     3.9.13
 
-This package is designed to collaborate with blender files in order to generate synthetic images for training AI vision models. The current implementation
-is able to provide ground truth or custom bounding boxes for object detection. There are several utility files associated with this package:
+This package is designed to collaborate with blender files in order to generate synthetic images for training AI vision models. The current implementation is able to provide ground truth or custom bounding boxes for object detection. There are several utility files associated with this package:
   * spawDirs.py:          Used to create consistent directory structures across all datasets
-  * synthGen<x>.py:       Handles .blend file and generation parameters, renders and stores images, initial csv, and vertex projectoin array
-  * blenderTools<x>.py:   Stores functions called from synthGen<x>.py
-  * buildDataSet<x>.py:   Used to handle unique variations of csvv/jsonl file creation, also handles identifying image coordinates for bounding boxes
+  * setupEnvironment.py   Used to register custom classes to aid in synthetic data generation from blender UI
+  * synthGen.py:          Handles .blend file and generation parameters, renders and stores images, initial csv, and vertex projectoin array
+  * blenderTools.py:      Stores functions called from synthGen.py
+  * buildDataSet.py:      Used to handle unique variations of csvv/jsonl file creation, also handles identifying image coordinates for bounding boxes
 
 The majority of the work that will be done is through the blender UI. A tutorial video for working with this specific package can be found
 at: _LinkToVideo_
@@ -18,7 +19,7 @@ NOTE: this documentation is fairly weak, you may encounter many problems when ca
 
 ## spawnDirs.py:
 
-This file must be run prior to any other process. This will generate a consistent directory structure between all datasets that will prevent issues later on. the general structure for each datset will look like:
+This file must be run prior to any other process. This will generate a consistent directory structure between all data sets that might prevent issues later on when locating files. The general structure for each datset will look like:
 
     root directory:
     |-- <fileName>
@@ -45,9 +46,22 @@ This file must be run prior to any other process. This will generate a consisten
         
 This file handles the majority of the generation procedures
 
+|   ID   | Description | Importance | Default |
+| ------ | ----------- | ---------- | ------- |
+| `constraint_tolerance` | All constraint violations must be below this value. | High | `1e-6` |
+
+## blenderTools.py:
+
+| function handle | Description | Inputs | Outputs |
+| --------------- | ----------- | ------ | ------- |
+| `convertVertices` | All constraint violations must be below this value. | High | `1e-6` |
+
+
 ## Blender / bpy usage:
 
 ## Conventions / Jargon:
+
+
 
 **_static_**:   an object, light, or camera that will not move through out entire data generation process
 
