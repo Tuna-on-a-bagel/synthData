@@ -60,6 +60,31 @@ This file handles the majority of the generation procedures
 | `resolutionY` | # of pixels | int() |  |  |  |
 
 
+**updateAbsPosition():** Update world coordinates of some object of interest, this can be used to itteratively call a given trajectory with desired time steps
+
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `obj` | object of interest | bpy struct | `None` |  |  |
+| `trajectory` | 3D coordinates | [[x1, y1, z1], [x2, y2, z2]] |  |  |  |
+| `timeStep` | trajectory[idx] | int |  |  |  |
+
+
+**rotate():** Update euler rotations of some object of interest, this can be used to itteratively call a given trajectory with desired time steps
+
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `obj` | object of interest | bpy struct | `None` |  |  |
+| `trajectory` | 3D rotations | [[x1, y1, z1], [x2, y2, z2]] |  |  |  |
+| `timeStep` | trajectory[idx] | int |  |  |  |
+
+
+**cart2Spher():** Convert cartesian coordinates [x, y, z] to spherical coordinates [radius, theta, phi]
+
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `cart` | object of interest | bpy struct | `cart` | [radius, theta, phi] | [float, float, float] |
+
+
 ## Blender / bpy usage:
 
 ## Conventions / Jargon:
