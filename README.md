@@ -15,5 +15,28 @@ NOTE: this documentation is fairly weak, you may encounter many problems when ca
 
 ## spawnDirs.py
 
-This file must be run prior to any other process. This will generate a consisten structure between all datasets that will prevent issues later on. the general structure for 
-each dataset is.
+This file must be run prior to any other process. This will generate a consisten structure between all datasets that will prevent issues later on. the general structure for each datset will look like:
+
+    root directory:
+    |-- <fileName>
+        |--  csvfile:
+        |    |--   <fileName>.csv                   csv file storing excess information including both BBox coordinates and camera locations etc
+        |    |--   <fileName>_gcp.csv               csv file that removes excess information, structured for gcp usage
+        |   
+        |--  descriptionJson:
+        |    |--   <fileName>_description.json      json used to store excess scene information for building/extracting super/sub sets 
+        |
+        |--  jsonFile:
+        |    |--   <fileName>.jsonl                 jsonl for gcp usage
+        |
+        |--  projectionMat:
+        |    |--   <fileName>.npy                   numpy array storing all vertext projections to image plane of objects with classification
+        |                                           association in blender file
+        |--  renders:
+        |    |--   0<fileName>.png
+        |    |--   1<fileName>.png
+        |    |--   ...
+        |    |--   n<fileName>.png
+
+## syntheGen1.py
+        
