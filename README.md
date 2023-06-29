@@ -52,23 +52,28 @@ This file handles the majority of the generation procedures
 
 ```python
 convertVertices(scene = bpy.context.scene, 
-                cam = bpy.data.objects['camera'], 
+                cam = bpy.data.objects['Camera'], 
                 obj = bpy.data.objects['Cube'], 
                 resolutionX = 1920, 
                 resolutionY = 1080)
 ```         
 Project an objects 3D world vertecies onto a 2D image plane
-  
+
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
-| `scene` | bpy.context.scene | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
+| `scene` | blender scene pointer | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
 | `cam` | camera object | bpy struct |  |  |  |
 | `obj` | object of interest | bpy struct |  |  |  |
 | `resolutionX` | # of pixels | int() |  |  |  |
 | `resolutionY` | # of pixels | int() |  |  |  |
 
 
-**updateAbsPosition():** Update world coordinates of some object of interest, this can be used to itteratively call a given trajectory with desired time steps
+```python
+updateAbsPosition(obj = bpy.data.objects['Cube'],
+                  trajectory = [[0, 0, 0]],
+                  timeStep = 0)
+```
+Update world coordinates of some object of interest, this can be used to itteratively call a given trajectory with desired time steps
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
@@ -76,8 +81,12 @@ Project an objects 3D world vertecies onto a 2D image plane
 | `trajectory` | 3D coordinates | [[x1, y1, z1], [x2, y2, z2]] |  |  |  |
 | `timeStep` | trajectory[idx] | int |  |  |  |
 
-
-**rotate():** Update euler rotations of some object of interest, this can be used to itteratively call a given trajectory with desired time steps
+```python
+rotate(obj = bpy.data.objects['Cube'],
+       trajectory = [[0, 0, 0]],
+       timeStep = 0)
+```
+Update euler rotations of some object of interest, this can be used to itteratively call a given trajectory with desired time steps
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
@@ -85,19 +94,32 @@ Project an objects 3D world vertecies onto a 2D image plane
 | `trajectory` | 3D rotations | [[x1, y1, z1], [x2, y2, z2]] |  |  |  |
 | `timeStep` | trajectory[idx] | int |  |  |  |
 
-
-**cart2Sphere():** Convert cartesian coordinates [x, y, z] to spherical coordinates [radius, theta, phi]
+```python
+cart2Sphere(cart = [0, 0, 0])
+```
+Convert cartesian coordinates [x, y, z] to spherical coordinates [radius, theta, phi]
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `cart` | [x, y, z] | [float, float, float] | `cart` | [radius, theta, phi] | [float, float, float] |
 
-**sphere2Cart():** Convert spherical coordinates [radius, theta, phi] to cartesian coordinates [x, y, z]
+```python
+sphere2Cart(cart = [0, 0, 0])
+```
+Convert spherical coordinates [radius, theta, phi] to cartesian coordinates [x, y, z]
   
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `cart` | [radius, theta, phi] | [float, float, float] | `cart` | [x, y, z] | [float, float, float] |
 
+```python
+curveLimits(obj = bpy.data.objects['NurbsPath'])
+```
+Extract the endpoint coordinates of a curve object in python
+
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `obj` | pointer to curve object | bpy struct | `limits` | [[x, y, z]] | [[float, float, float]] |
 
 ## Blender / bpy usage:
 
