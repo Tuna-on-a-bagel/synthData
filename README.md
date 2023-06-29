@@ -52,7 +52,7 @@ This file handles the majority of the generation procedures
 **convertVertices():** Project some set of world 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane
 
 | Parameters | Description | type | Returns | Description | type |
-| ---------- | ----------- | ---- | ------- | ----------- | 
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `scene` | bpy.context.scene | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
 | `cam` | camera object | bpy struct |  |  |  |
 | `obj` | object of interest | bpy struct |  |  |  |
