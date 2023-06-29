@@ -49,7 +49,7 @@ This file handles the majority of the generation procedures
 
 ## Conventions / Jargon:
 
-_static_:   an object, light, or camera that will not move through out entire data generation process
+*_static_*:   an object, light, or camera that will not move through out entire data generation process
 
 _dynamic_:  an object, light, or camera that will have some type of movement or variation through out data generation
 
