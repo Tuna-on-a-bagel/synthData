@@ -51,6 +51,8 @@ This file handles the majority of the generation procedures
 
 **convertVertices():** Project some set of world 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane
 
+| something                                                      |
+| -------------------------------------------------------------- |                   
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `scene` | bpy.context.scene | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
@@ -78,11 +80,17 @@ This file handles the majority of the generation procedures
 | `timeStep` | trajectory[idx] | int |  |  |  |
 
 
-**cart2Spher():** Convert cartesian coordinates [x, y, z] to spherical coordinates [radius, theta, phi]
+**cart2Sphere():** Convert cartesian coordinates [x, y, z] to spherical coordinates [radius, theta, phi]
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
-| `cart` | object of interest | bpy struct | `cart` | [radius, theta, phi] | [float, float, float] |
+| `cart` | [x, y, z] | [float, float, float] | `cart` | [radius, theta, phi] | [float, float, float] |
+
+**sphere2Cart():** Convert spherical coordinates [radius, theta, phi] to cartesian coordinates [x, y, z]
+  
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `cart` | [radius, theta, phi] | [float, float, float] | `cart` | [x, y, z] | [float, float, float] |
 
 
 ## Blender / bpy usage:
