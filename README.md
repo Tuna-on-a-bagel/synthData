@@ -1,4 +1,4 @@
-# Synthetic Data generation
+# Synthetic Data generation overview
 
 This package is designed to collaborate with blender files in order to generate synthetic images for training AI vision models. The current implementation
 is able to provide ground truth or custom bounding boxes for object detection. There are several utility files associated with this package:
@@ -10,6 +10,10 @@ is able to provide ground truth or custom bounding boxes for object detection. T
 The majority of the work that will be done is through the blender UI. A tutorial video for working with this specific package can be found
 at: <put link to video here>
 
-all of these modules utilize the blender python api bpy. Documentation for bpy can be found here: https://docs.blender.org/api/current/index.html
-NOTE: this documentation is fairly weak, you may encounter many problems when calling certain functionns. There have been many changes made between bpy 2.8 and 3.5,
+All of these modules utilize the blender python api bpy. Documentation for bpy can be found here: https://docs.blender.org/api/current/index.html
+NOTE: this documentation is fairly weak, you may encounter many problems when calling certain functions. There have been many changes made between bpy 2.8 and 3.5, but the 3.5 documentation is lagging behind.
 
+## spawnDirs.py
+
+This file must be run prior to any other process. This will generate a consisten structure between all datasets that will prevent issues later on. the general structure for 
+each dataset is.
