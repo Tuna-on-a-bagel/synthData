@@ -46,15 +46,12 @@ This file must be run prior to any other process. This will generate a consisten
         
 This file handles the majority of the generation procedures
 
-|   ID   | Description | Importance | Default |
-| ------ | ----------- | ---------- | ------- |
-| `constraint_tolerance` | All constraint violations must be below this value. | High | `1e-6` |
 
 ## blenderTools.py:
 
 | function handle | Description | Inputs | Outputs |
 | --------------- | ----------- | ------ | ------- |
-| `convertVertices` | All constraint violations must be below this value. | High | `1e-6` |
+| `convertVertices` | Project some set of 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane | scene = bpy.context.scene \n cam = blender camera object | `1e-6` |
 
 
 ## Blender / bpy usage:
