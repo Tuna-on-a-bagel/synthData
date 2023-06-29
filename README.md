@@ -51,12 +51,14 @@ This file handles the majority of the generation procedures
 
 
 ```python
-convertVertices(scene=bpy.context.scene, 
-                cam=bpy.data.objects['camera'], 
-                obj=bpy.data.objects['Cube'], 
-                resolutionX=1920, 
-                resolutionY=1080)
-```           
+convertVertices(scene = bpy.context.scene, 
+                cam = bpy.data.objects['camera'], 
+                obj = bpy.data.objects['Cube'], 
+                resolutionX = 1920, 
+                resolutionY = 1080)
+```         
+Project an objects 3D world vertecies onto a 2D image plane
+  
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `scene` | bpy.context.scene | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
