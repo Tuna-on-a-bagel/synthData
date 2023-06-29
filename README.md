@@ -49,10 +49,10 @@ This file handles the majority of the generation procedures
 
 ## blenderTools.py:
 
-**convertVertices():** Project some set of world 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane
 
 ```python
-convertVertices(scene=bpy.context.scene)
+convertVertices(scene=bpy.context.scene, cam=bpy.data.objects['camera'], obj=bpy.data.objects['Cube'], resolutionX=1920, resolutionY=1080)
+'''Project some set of world 3D coordinates onto a 2D plane, used to project list of bpy object vertices onto the camera image plane'''
 ```           
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
