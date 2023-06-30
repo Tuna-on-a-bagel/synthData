@@ -1,15 +1,17 @@
 # Synthetic Data generation overview
 
-Blender version:    3.6.0
-
-Python Version:     3.9.13
+## Requirements:
+* Blender version:    3.6.0  
+* Python Version:     3.9.13  
+* Ubuntu Version:     20.04  
 
 This package is designed to collaborate with blender files in order to generate synthetic images for training AI vision models. The current implementation is able to provide ground truth or custom bounding boxes for object detection. There are several utility files associated with this package:
   * spawDirs.py:          Used to create consistent directory structures across all datasets
   * setupEnvironment.py   Used to register custom classes to aid in synthetic data generation from blender UI
   * synthGen.py:          Handles .blend file and generation parameters, renders and stores images, initial csv, and vertex projectoin array
-  * blenderTools.py:      Stores functions called from synthGen.py
   * buildDataSet.py:      Used to handle unique variations of csvv/jsonl file creation, also handles identifying image coordinates for bounding boxes
+  * blenderTools.py:      Stores functions called from synthGen.py
+  
 
 The majority of the work that will be done is through the blender UI. A tutorial video for working with this specific package can be found
 at: _LinkToVideo_
@@ -44,14 +46,15 @@ This file must be run prior to any other process. This will generate a consisten
 
 ## setupEnvironment.py usage:
 
-This file will register the custom synthetic data tools into the blender UI. From blender UI, navigate to `scripting`, then load in this file and run. From the main 3D viewport area, you will see a new tab appear named `'Synth Tools'` under the orientation axis in the top right corner.
+This file will register the custom synthetic data tools into the blender UI. From blender UI, navigate to `scripting`, then load in this file and run. From the main 3D viewport area, you will see a new tab appear named `'Synth Tools'` under the orientation axis in the top right corner. See the tutorial video for an overview on how these tools can be used.
 
 ![blender_synthTools](https://github.com/Tuna-on-a-bagel/synthData/assets/51982197/dbce332d-cd8e-4476-bc00-8d582e267cba)
 
-
 ## synthGen1.py usage:
         
-This file handles the majority of the generation procedures. From blender UI, navigate to `scripting`, then load in this file and run. This will render from using the selected GPU device found in `>edit, >preferences, >system, >cycles render device`
+This file handles the majority of the generation procedures. From blender UI, navigate to `scripting`, then load in this file. Scroll to the bottom of the file where you will find several dictionaries containing parameters to control the rendering. Again, the majority of the tools for making unique modifcations are found within the blender UI, and you should see the tutorial video link to learn how to manipulate these. However, the dictionaries in this document can be used to set global modifications and control things such as render count, domain randomization, random distribution types, Camera parameters, and general scene info such as CAD model identifiers etc.  
+
+When you have set every parameter to your needs, running this script will start the process. The render engine will use whatever device is selected through `>edit, preferences, >system, >cycles render device`, you should verify that the correct GPU device is enabled before running.
 
 
 ## blenderTools.py usage:
@@ -71,8 +74,8 @@ Project an objects 3D world vertecies onto a 2D image plane
 | `scene` | pointer to blender scene | bpy struct | `projectedVertices` | [[x, y, depth]] | [[float, float, float]] |
 | `cam` | pointer to camera | bpy struct |  |  |  |
 | `obj` | pointer to object | bpy struct |  |  |  |
-| `resolutionX` | # of pixels | int() |  |  |  |
-| `resolutionY` | # of pixels | int() |  |  |  |
+| `resolutionX` | # of pixels | int |  |  |  |
+| `resolutionY` | # of pixels | int |  |  |  |
 
  ----------
 
@@ -224,5 +227,6 @@ An object that is independently paired to another (child) object. When the paren
 objects will match that transformation. To make an object a parent fromm the gui, you must multi select that object `LAST`, `>right click, >parent, >object`
 
 * child/parent example: All wires on an electronic connector are made children of the connector interface object. This way, we can constrain and move just the connector intterface object (the parent), apply trasnformations to just this object, and all children will respond with the same transofrmations. This is handled in blender native c++ behind the scenes and is much more efficient than implementing through python **NOTE: These objects do NOT need to be stored in the same collection. The child parent behavior is always enforced regardless of object storage location**
+
 
 
