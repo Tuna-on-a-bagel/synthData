@@ -17,7 +17,7 @@ at: _LinkToVideo_
 All of these modules utilize the blender python api bpy. Documentation for bpy can be found here: https://docs.blender.org/api/current/index.html
 NOTE: this documentation is fairly weak, you may encounter many problems when calling certain functions. There have been many changes made between bpy 2.8 and 3.5, but the 3.5 documentation is lagging behind.
 
-## spawnDirs.py:
+## spawnDirs.py usage:
 
 This file must be run prior to any other process. This will generate a consistent directory structure between all data sets that might prevent issues later on when locating files. The general structure for each datset will look like:
 
@@ -42,12 +42,19 @@ This file must be run prior to any other process. This will generate a consisten
         |    |--   ...
         |    |--   n<fileName>.png
 
-## syntheGen1.py:
+## setupEnvironment.py usage:
+
+This file will register the custom synthetic data tools into the blender UI. From blender UI, navigate to `scripting`, then load in this file and run. From the main 3D viewport area, you will see a new tab appear named `'Synth Tools'` under the orientation axis in the top right corner.
+
+![blender_synthTools](https://github.com/Tuna-on-a-bagel/synthData/assets/51982197/dbce332d-cd8e-4476-bc00-8d582e267cba)
+
+
+## synthGen1.py usage:
         
-This file handles the majority of the generation procedures
+This file handles the majority of the generation procedures. From blender UI, navigate to `scripting`, then load in this file and run. This will render from using the selected GPU device found in `>edit, >preferences, >system, >cycles render device`
 
 
-## blenderTools.py:
+## blenderTools.py usage:
 
 
 ```python
@@ -61,12 +68,13 @@ Project an objects 3D world vertecies onto a 2D image plane
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
-| `scene` | blender scene pointer | bpy struct | `projectedVertices` | [[x, y, depth]] | nested lists |
-| `cam` | camera object | bpy struct |  |  |  |
-| `obj` | object of interest | bpy struct |  |  |  |
+| `scene` | pointer to blender scene | bpy struct | `projectedVertices` | [[x, y, depth]] | [[float, float, float]] |
+| `cam` | pointer to camera | bpy struct |  |  |  |
+| `obj` | pointer to object | bpy struct |  |  |  |
 | `resolutionX` | # of pixels | int() |  |  |  |
 | `resolutionY` | # of pixels | int() |  |  |  |
 
+ ----------
 
 ```python
 updateAbsPosition(obj = bpy.data.objects['Cube'],
@@ -77,9 +85,11 @@ Update world coordinates of some object of interest, this can be used to itterat
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
-| `obj` | object of interest | bpy struct | `None` |  |  |
-| `trajectory` | 3D coordinates | [[x1, y1, z1], [x2, y2, z2]] |  |  |  |
+| `obj` | pointer to object | bpy struct | `None` |  |  |
+| `trajectory` | [[x1, y1, z1]] | [[float, float, float]] |  |  |  |
 | `timeStep` | trajectory[idx] | int |  |  |  |
+
+ ----------
 
 ```python
 rotate(obj = bpy.data.objects['Cube'],
@@ -90,9 +100,11 @@ Update euler rotations of some object of interest, this can be used to itterativ
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
-| `obj` | object of interest | bpy struct | `None` |  |  |
-| `trajectory` | 3D rotations | [[x1, y1, z1], [x2, y2, z2]] |  |  |  |
+| `obj` | pointer to object | bpy struct | `None` |  |  |
+| `trajectory` | [[theta1, phi1, omega1]] | [float, float, float] |  |  |  |
 | `timeStep` | trajectory[idx] | int |  |  |  |
+
+ ----------
 
 ```python
 cart2Sphere(cart = [0, 0, 0])
@@ -103,6 +115,8 @@ Convert cartesian coordinates [x, y, z] to spherical coordinates [radius, theta,
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `cart` | [x, y, z] | [float, float, float] | `cart` | [radius, theta, phi] | [float, float, float] |
 
+ ----------
+
 ```python
 sphere2Cart(cart = [0, 0, 0])
 ```
@@ -112,41 +126,103 @@ Convert spherical coordinates [radius, theta, phi] to cartesian coordinates [x, 
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
 | `cart` | [radius, theta, phi] | [float, float, float] | `cart` | [x, y, z] | [float, float, float] |
 
+ ----------
+
 ```python
-curveLimits(obj = bpy.data.objects['NurbsPath'])
+constraintLimits(obj = bpy.data.objects['NurbsPath'])
 ```
-Extract the endpoint coordinates of a curve object in python
+Extract the maximum coordinates of a 'CURVE', 'PLANE', or 'MESH' blender object
 
 | Parameters | Description | type | Returns | Description | type |
 | ---------- | ----------- | ---- | ------- | ----------- | ---- |
-| `obj` | pointer to curve object | bpy struct | `limits` | [[x, y, z]] | [[float, float, float]] |
+| `obj` | pointer to object | bpy struct | `limits` | [[x, y, z]] | [[float, float, float]] |
 
-## Blender / bpy usage:
+ ----------
 
-## Conventions / Jargon:
+```python
+generatePositions(constraintObj = bpy.data.objects['NurbsPath'], 
+                  dynamicObj = bpy.data.objects['Cube'],
+                  randomType = 'uniform',
+                  count = 100)
+```
+Generate a random list of 3D world coordinates that obey a desired constraint for translating an object, specify distribution type `'uniform'` or `'normal'`. if `'normal'` specified, the mean location will be the initial position of the object
+
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `constraintObj` | pointer to object | bpy struct | `positions` | [[x1, y1, z1], [xn, yn, zn]] | [[float, float, float]] |
+| `dynamicObj` | pointer to object | bpy struct |  |  |  |
+| `randomType` | random distribution type | string |  |  |  |
+| `count` | number of positions | int |  |  |  |
+
+ ----------
+
+```python
+generateRotations(constraint = [(0.5, -0.2), (0., -1.), (0., 0.)], 
+                  dynamicObj = bpy.data.objects['Cube'],
+                  randomType = 'uniform',
+                  count = 100)
+```
+Generate a random list of 3D world euler rotations that obey a desired constraint for rotating an object, specify distribution type `'uniform'` or `'normal'`. If `'normal'` specified, the mean location will be the initial orientation of the object
+
+| Parameters | Description | type | Returns | Description | type |
+| ---------- | ----------- | ---- | ------- | ----------- | ---- |
+| `constraint` | **in radians** [+/-theta, +/- phi... ] | [(float, float), (float, float), (float, float)] | `rotations` | [[theta1, phi1, omega1], [theta_n, phi_n, omega_n]] | [[float, float, float]] |
+| `dynamicObj` | pointer to object | bpy struct |  |  |  |
+| `randomType` | random distribution type | string |  |  |  |
+| `count` | number of positions | int |  |  |  |
+
+ ----------
+
+```python
+visualizeDataStruct(dataObject = bpy.data.objects['Cube'])
+```
+Create a txt file that displays the structure of a blender data object
 
 
+## buildDataSet.py usage
 
-**_static_**:   an object, light, or camera that will not move through out entire data generation process
 
-**_dynamic_**:  an object, light, or camera that will have some type of movement or variation through out data generation
+# Blender Overview
+
+## bpy usage:
+
+## Conventions
+
+**_starting a new blend file_**:  
+Always begin by loading basicEnvironement.blend (see: putLinkToFileHere), this is set up with the proper collection structure for other files that is neccessary to destinguish between static and dynamic parts. 
+
+**_Exporting / importing parts_**:  
+  * When exporting cad files from given cad program, ensure you always export as (PUT FILE TYPE HERE). You must convert these files to `.stl` before importing to blender.
+  * When Importing parts to blender, always use a consistent scale factor (upper right corner of import pop-up)
+
+**_setting blender origin_**:  
+When you begin a new blender file, import the body of the main component first. Then do the following `>selectObject, >right click, >set origin, >origin to center of mass (volume)`. This is imperitive to keep consistent with other datasets. This will be useful for converting coordinates from blender world frame to a robot frame for example.
+
+**_render engine_**:  
+Typically choose `'cycles'`
+
+
+## Jargon:
+
+**_static_**:   
+an object, light, or camera that will not move through out entire data generation process
+
+**_dynamic_**:  
+an object, light, or camera that will have some type of movement or variation through out data generation
 
 * For parts to move (translate) _**via random generation**_ they must have some kind of constrraint object associated with them. This can be a 
-'CURVE', 'PLANE', or 'MESH'. If no constraint is identified, the part will not transalte through out the process. You do NOT need to define a 
+`'CURVE'`, `'PLANE'`, or `'MESH'`. If no constraint is identified, the part will not transalte through out the process. You do NOT need to define a 
 constraint in order to move a part manually, this is only required for random position gneration. 
 
-* Dynamic parts also have the ability to transform their features. Objects may be given multiple material slots that can be randomly selected
-    to decrease reliance on color or texture patterns. Lights can be given an intensity range constraint so that they can change how bright 
-    the source is on each iteration
+* Dynamic parts also have the ability to transform their features. Objects may be given multiple material slots that can be randomly selected to decrease reliance on color or texture patterns. Lights can be given an intensity range constraint so that they can change how bright the source is on each iteration
 
-**_child_**:    An object that is dependently paired to another (parent) object. When the child is selected and moved, no changes occur to the
-            parent object. When the parent object is selected and moved, the child object will also match the parents transformation. to make a desired object or objects children of another part, you must multiselect them all FIRST, the multiselect the parent object LAST, from the gui: >right click, >parent, >object
+**_child_**:    
+An object that is dependently paired to another (parent) object. When the child is selected and moved, no changes occur to the parent object. When the parent object is selected and moved, the child object will also match the parents transformation. to make a desired object or objects children of another part, you must multiselect them all `FIRST`, the multiselect the parent object `LAST`, from the gui: `>right click, >parent, >object`
 
+**_parent_**:   
+An object that is independently paired to another (child) object. When the parent object is selected and moved, all child
+objects will match that transformation. To make an object a parent fromm the gui, you must multi select that object `LAST`, `>right click, >parent, >object`
 
-**_parent_**:   An object that is independently paired to another (child) object. When the parent object is selected and moved, all child
-            objects will match that transformation. To make an object a parent fromm the gui, you must multi select that object LAST, >right click, >parent, >object
-
-* child/parent example: All wires on an electronic connector are made children of the connector interface object. This way, we can constrain and
-                        move just the connector intterface object (the parent), apply trasnformations to just this object, and all children will respond with the same transofrmations. This is handled in blender native c++ behind the scenes and is much more efficient than implementing through python **NOTE: These objects do NOT need to be stored in the same collection. The child parent behavior is always enforced regardless of object storage location**
+* child/parent example: All wires on an electronic connector are made children of the connector interface object. This way, we can constrain and move just the connector intterface object (the parent), apply trasnformations to just this object, and all children will respond with the same transofrmations. This is handled in blender native c++ behind the scenes and is much more efficient than implementing through python **NOTE: These objects do NOT need to be stored in the same collection. The child parent behavior is always enforced regardless of object storage location**
 
 
