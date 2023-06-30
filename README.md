@@ -1,9 +1,13 @@
 # Synthetic Data generation overview
 
-## Requirements:
+## Version info:
 * Blender version:    3.6.0  
 * Python Version:     3.9.13  
 * Ubuntu Version:     20.04  
+
+```python
+pip install -r requirements.txt
+```
 
 This package is designed to collaborate with blender files in order to generate synthetic images for training AI vision models. The current implementation is able to provide ground truth or custom bounding boxes for object detection. There are several utility files associated with this package:
   * spawDirs.py:          Used to create consistent directory structures across all datasets
@@ -56,7 +60,7 @@ This file handles the majority of the generation procedures. From blender UI, na
 
 When you have set every parameter to your needs, running this script will start the process. The render engine will use whatever device is selected through `>edit, preferences, >system, >cycles render device`, you should verify that the correct GPU device is enabled before running.
 
-### Built in methods:
+### synthGen1.py methods:
 
 camera class:
 
@@ -85,7 +89,7 @@ Used to update the intensity (aka Energy) output of a given light. The ranges of
 | `domainRandomization` | randomization params | dict |  |  |  |
 
  -----------
- 
+
 ## blenderTools.py usage:
 
 
@@ -213,10 +217,10 @@ Create a txt file that displays the structure of a blender data object
 
 ## buildDataSet.py usage
 
+Classes and frequency of classes are defined in synthGen.py. buildDataSet.py handles Train/Test/Validation splits, gcp file path ID/setup, and bounding box coordinate identification. Before you run this file, ensure you have set all parameters at the bottom of the file to your desired needs. NOTE: to avoid loosing any data or crashing, ensure that you train/test/split values sum to 1, and result in whole numbers when multiplied by render count. Example, `DO:` train = 0.8, renderCount = 250, train * renderCount = 200. `DONT:` train = 0.85, renderCount = 250, train * renderCount = 212.5
+
 
 # Blender Overview
-
-## bpy usage:
 
 ## Conventions
 
@@ -258,11 +262,13 @@ objects will match that transformation. To make an object a parent fromm the gui
 * child/parent example: All wires on an electronic connector are made children of the connector interface object. This way, we can constrain and move just the connector intterface object (the parent), apply trasnformations to just this object, and all children will respond with the same transofrmations. This is handled in blender native c++ behind the scenes and is much more efficient than implementing through python **NOTE: These objects do NOT need to be stored in the same collection. The child parent behavior is always enforced regardless of object storage location**
 
 **_material slot_**:  
-A storage location for a new material. material slots are a list that is stroed in the object data struct: bpy.data.objects['Cube'].material_slots[<idx>].material  
+A storage location for a new material. material slots are a list that is stroed in the object data struct: bpy.data.objects['Cube'].material_slots[<idx>].material 
+
+**_material node_**:  
+A graphical coding tool to modify certain properties of a material.
 
 **_part dependency_**:  
 In an object classification block, you'll find a string entry for `<part dependency>`. This is used when you are classifying an object whos class depends on the location of another object. For example, if you are interested in putting a BBox around the female connector, but the classificvation depends on the location of the male plug, you can enter the ID name of the male plug here to indicate to blender which part defines this class active/inactive.
 
-**_split_**:
+**_split_**:  
 A float parameter within the object classification block that allows you to define the percentage of renders that each class should observe. NOTE: The sum of splits across all classes for a single object must equal 1. Example, if an object has one class, the split should be 1.0. If an object has two classes, the splits could be 0.8 and 0.2 etc.
-
