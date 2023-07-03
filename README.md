@@ -62,7 +62,7 @@ When you have set every parameter to your needs, running this script will start 
 
 ### synthGen1.py methods:
 
-camera class:
+Camera class:
 
 ```python
 camera.toggleTracking()
@@ -75,7 +75,7 @@ Used to turn on and off the camera tracking constraint. When turned on, and envi
 
  -----------
 
-lighting class:
+Lighting class:
 
 ```python
 lights.updateIntensity(light = bpy.data.objects['Point'],
@@ -222,7 +222,7 @@ Classes and frequency of classes are defined in synthGen.py. buildDataSet.py han
 
 # Blender Overview
 
-## Conventions
+## Conventions:
 
 **_starting a new blend file_**:  
 Always begin by loading basicEnvironement.blend (see: putLinkToFileHere), this is set up with the proper collection structure for other files that is neccessary to destinguish between static and dynamic parts. 
@@ -236,6 +236,9 @@ When you begin a new blender file, import the body of the main component first. 
 
 **_render engine_**:  
 Typically choose `'cycles'`
+
+**_collections_**:  
+Blender seems to import parts into the most recently modified collection. If you import a new part, or add a mesh/curve, make sure you verify which collection it has been placed into and move it if neccessary. Some features within synthGen.py look for objects within certain collections for logic.
 
 
 ## Jargon:
@@ -272,3 +275,6 @@ In an object classification block, you'll find a string entry for `<part depende
 
 **_split_**:  
 A float parameter within the object classification block that allows you to define the percentage of renders that each class should observe. NOTE: The sum of splits across all classes for a single object must equal 1. Example, if an object has one class, the split should be 1.0. If an object has two classes, the splits could be 0.8 and 0.2 etc.
+
+**_collection_**:  
+A group of objects in the object ID viewer panel. Typically used for organization but can also be used to parse objects within blender to apply some logic to. 
