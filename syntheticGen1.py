@@ -52,10 +52,13 @@ class lighting():
             self.dynamic[light.name] = dict()
             
             self.dynamic[light.name]['initLoc'] = copy.copy(light.location)
-            self.dynamic[light.name]['constraint'] = light.data['constraint']
+
+            try:self.dynamic[light.name]['constraint'] = light.data['constraint']
+            except: print(f'Warning, no constraint provided for {light.name}')
+
             self.dynamic[light.name]['initIntensity'] = copy.copy(light.data.energy)
             
-            #check if intensity specified
+            #check if intensity range specified
             try: self.dynamic[light.name]['intensityRange'] = light.data['intensityRange'] #[min, max]
             except: self.dynamic[light.name]['intensityRange'] = None
 
@@ -184,7 +187,7 @@ class classifications():
                     if dependencyConstraintID != '<Path, Plane, or Volume ID>': dependencyConstraintObj = bpy.data.objects[dependencyConstraintID]
                     else: 
                         dependencyConstraintObj = None
-                        if partDependencyObj == None:
+                        if partDependencyObj != None:
                             print('Warning: part dependency defined but no dependency constraint provided')
                             break
 
@@ -228,7 +231,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     print('')
     
     #debugging
-    debugFile = open("/home/tuna/Documents/driving/Vision/syntheticData/bpyTest.txt", 'w')
+    #debugFile = open("/home/tuna/Documents/driving/Vision/syntheticData/bpyTest.txt", 'w')
 
     file = open(paths['csv'] + paths['fileName'] + ".csv", "w")
     data = csv.writer(file)
@@ -278,7 +281,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     #generate dynamic camera translation positions
     if cameraParams['translation']['active']:
         randomType = cameraParams['translation']['random']['method']
-        print('gen positions T')
+        
         cam.translationPostions = bt.generatePositions(constraintObj=      cam.constraint, 
                                                         dynamicObj=     cam.cam, 
                                                         randomType=     randomType, 
@@ -391,39 +394,56 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     
     for objName in classObjs.classObjects.keys():
 
+        obj = bpy.data.objects[objName]
+
         for klass in classObjs.classObjects[objName].keys():
 
-            #identify klassification parameters
-            try:
-                #if a constraint is provided we assume part should move
-                dependencyConstraint = classObjs.classObjects[objName][klass]['dependencyConstraint']   #object pointer
-
-            except:
-                #else it will be static
-                dependencyConstraint = None
-
-            dependency = classObjs.classObjects[objName][klass]['partDependency']                   #object pointer
             split = classObjs.classObjects[objName][klass]['split']                                 #float
 
             #calulate how many positions should store for this class
             numOfPositions = int(renderCount * split)           #int
 
-            #detirmine positions
-            points = bt.generatePositions(constraintObj=    dependencyConstraint,
-                                           dynamicObj=      dependency, 
-                                           randomType=      'uniform',  
-                                           count=           numOfPositions)
 
-            #add list of points to the dict
-            classObjs.classObjects[objName][klass]['dependencyPositions'] = points  
+            constraint = classObjs.classObjects[objName][klass]['constraint']
+
+            #if constraint provided and part is dynamic
+            if constraint and (objName in bpy.data.collections['dynamicParts'].objects):
+                points = bt.generatePositions(constraintObj=    constraint, 
+                                              dynamicObj=       obj,        
+                                              randomType=       'uniform',  
+                                              count=            numOfPositions)
+                
+                classObjs.classObjects[objName][klass]['positions'] = points 
+            
+
+
+            #identify klassification parameters
+            dependency = classObjs.classObjects[objName][klass]['partDependency']                   #object pointer
+            
+            #if dependency and dependency is dynamic
+            if dependency and (dependency.name in bpy.data.collections['dynamicParts'].objects):
+
+                #if a constraint is provided we assume part should move
+                dependencyConstraint = classObjs.classObjects[objName][klass]['dependencyConstraint']   #object pointer
+
+                #detirmine positions
+                points = bt.generatePositions(constraintObj=    dependencyConstraint,
+                                              dynamicObj=       dependency, 
+                                              randomType=       'uniform',  
+                                              count=            numOfPositions)
+         
+                
+                #add list of points to the dict
+                classObjs.classObjects[objName][klass]['dependencyPositions'] = points  
+
 
             #debugging
-            debugFile.write(f'index: {objName} \n')
-            debugFile.write(f'klass: {klass} \n')
-            debugFile.write(f'numOfPos: {numOfPositions} \n')
-            debugFile.write(f'positions: {points} \n')
-            debugFile.write('\n')
-    debugFile.close()
+            #debugFile.write(f'index: {objName} \n')
+            #debugFile.write(f'klass: {klass} \n')
+            #debugFile.write(f'numOfPos: {numOfPositions} \n')
+            #debugFile.write(f'positions: {points} \n')
+            #debugFile.write('\n')
+    #debugFile.close()
 
 
     #setCoordinates = [] #array storing projection coordinates of each object in every frame
@@ -462,53 +482,6 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
                     for j in range(1, len(obj.material_slots)):
                         obj.material_slots[j].material = holder[j]
 
-
-
-
-
-
-                    '''
-                    newMaterial = obj.material_slots[idx].material
-
-                    #move existing entries down
-                    for i in range(1, idx):
-                        obj.material_slots[idx - i].material = obj.material_slots[idx - (i + 1)].material
-                    
-                    #assign 0 slot to new material
-                    obj.material_slots[0].material = newMaterial
-                    '''
-                    
-
-                    #bpy.context.object.active_material_index = idx
-                    #bpy.ops.object.material_slot_select()
-                    #bpy.ops.object.editmode_toggle()
-                    #bpy.ops.object.select_all(action='DESELECT')
-                    #build holder list
-                    holder = []
-                    #for i in range(len(obj.material_slots)):
-                    #    holder.append(obj.material_slots[i])
-
-                    #random.shuffle(holder)
-
-                    #reorder 
-                    #for i in range(len(obj.material_slots)):
-                    #    obj.material_slots[i] = holder[i]
-                    
-
-                    iter = 0
-
-
-                    ## lets make a holder copy list, then reorder the actual positions from this holder list
-
-
-
-                    '''
-                    while obj.material_slots[0] != obj.active_material:
-                        bpy.ops.object.material_slot_move(direction='UP')
-                        iter+=1
-                        if iter >= len(obj.material_slots):
-                            break
-                    '''   
                     bpy.ops.object.select_all(action='DESELECT')
                     
                     #NOTE: there exists bpy.ops.object.material_slot_select() which should make a desired material the active one, however this errors on my version, \
@@ -532,6 +505,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 
         #loop through all objects with classifications
         for object in classObjs.classObjects.keys():
+            obj = bpy.data.objects[object]
            
             klassifications = list(classObjs.classObjects[object].keys())   #list of integers
             split = 0
@@ -546,16 +520,22 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
                 split += classObjs.classObjects[object][klass]['split']     #float
                 
                 if i < int(renderCount * split): break
+
+            #if main part is dynamic
+            objPositions = classObjs.classObjects[object][klass]['positions']
+            if objPositions and objPositions != []:
+                position = objPositions[i - idxShift]
+                bt.updateAbsPosition(obj, [position], 0)
             
-            #object that will move
+         
+            #if dependency that will move
             dependency = classObjs.classObjects[object][klass]['partDependency']    #object pointer
+            if dependency:
+                position = classObjs.classObjects[object][klass]['dependencyPositions'][i - idxShift]   #[x, y, z]
+                bt.updateAbsPosition(dependency, [position], 0)
+            
+           
 
-            #new position
-            #print(f"len(positions):{len(classObjs.classObjects[object][klass]['dependencyPositions'])}, current index(i - idxshift): {i - idxShift}")
-            position = classObjs.classObjects[object][klass]['dependencyPositions'][i - idxShift]   #[x, y, z]
-
-            #update position of the object
-            bt.updateAbsPosition(dependency, [position], 0)
             
             #Logic to handle custom bboxes for vert projections
             if classObjs.classObjects[object][klass]['customBBox']:
@@ -603,7 +583,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
         part = bpy.data.objects[obj]
         initLoc = objs.dynamic[obj]['initLoc']
         bt.updateAbsPosition(part, [initLoc], 0)
-        #print(f'sent {part.name} to home')
+       
 
     #return Lights Home
     for lightName in lights.dynamic.keys():
@@ -634,60 +614,22 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     camInitSphere = bt.cart2Sphere([camInitCart[0], camInitCart[1], camInitCart[2]])
     r, theta, phi = camInitSphere[0], camInitSphere[1], camInitSphere[2]
     
-    file = open(csvPath + fileName + ".csv", "w")
-    data = csv.writer(file)
-    #top row column titles
-    labelID = ["use", "fileName", "classification","xMin", "yMin", None, None, "xMax", "yMax", None, None]
-    data.writerow(labelID)
-
-    setCoordinates = [] #array storing projection coordinates of each object in every frame
-
-    for i in range(0, renderCount):
-        
-        bpy.ops.render.render(write_still=True)
-        
-        #update projected coordinates array
-        frameArray = [] #list to hold image coordinates of each object in the frame thats selected
-        classification = []
-        
-        tempFileName = fileName    
-
-        for j in range(len(obj)):
-
-            imageCoordinates = bt.convertVertices(scene, cam, obj[j], res_x, res_y)
-            frameArray.append(imageCoordinates)
-        
-            if (obj[j].location == initLoc[j]) and (obj[j].rotation_euler == initRot[j]): classification.append(str(j+1)+'OK')
-            else: classification.append(str(j+1) + 'NO')
-
-        for j in range(len(obj)):
-            tempFileName = tempFileName + f"_{classification[j]}"
-           
-
-        for j in range(len(obj)):
-
-            instance = [None, str(i) + tempFileName + ".png", classification[j], None, None, None, None, None, None, None, None]
-            data.writerow(instance)
-
-        render_path = renderPath + str(i) + tempFileName + ".png"
-        bpy.data.images['Render Result'].save_render(render_path, scene=bpy.context.scene)
-        #write instance to csv
-        #
-
-        
-        setCoordinates.append(frameArray)"""
+    """
+   
+ 
             
 
+#'/home/tuna/Documents/driving/Vision/syntheticData/dataSets/ADAS/'
 
 if __name__ == "__main__":
 
     renders = dict({
-                    'count':    20,
+                    'count':    2,
                     })
     
     paths = dict()
-    paths['fileName'] =     'synthGenT3'
-    paths['root'] =         '/home/tuna/Documents/driving/Vision/syntheticData/dataSets/ADAS/' + paths['fileName'] + '/'
+    paths['fileName'] =     'testingChange1'
+    paths['root'] =         '/media/tuna/Pauls_USBA/adas/' + paths['fileName'] + '/'
     paths['renders'] =      paths['root'] + 'renders/'
     paths['csv'] =          paths['root'] + 'csvFile/'
     paths['jsonFile']=      paths['root'] + 'jsonFile/'
@@ -702,7 +644,7 @@ if __name__ == "__main__":
                         'properties':
                                 {
                                 'monocular/stereo': 'monocular',                        # [<'monocular'>, <'stereo'>]
-                                "baselineDist":     0,                                  # [<float>] 
+                                "baselineDist_mm":  0.,                                 # [<float>] 
                                 'focalLength_mm':   25.,                                # [<float>]
                                 'sensorWidth_mm':   12.8,                               # [<float>]
                                 'sensorHeight_mm':  9.6                                 # [<float>]
@@ -716,7 +658,7 @@ if __name__ == "__main__":
                     
                         'translation': 
                                 {
-                                'active':           True,                               # [<True>, <False>]           if set to True, camera translate within constraint **must have a constraint**
+                                'active':           False,                               # [<True>, <False>]           if set to True, camera translate within constraint **must have a constraint**
                                 'random':          
                                     { 
                                     'method':       'uniform',                           # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
