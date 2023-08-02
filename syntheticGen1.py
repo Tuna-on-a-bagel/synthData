@@ -42,8 +42,9 @@ class lighting():
 
     def __init__(self):
 
-        self.static = []
-        self.dynamic = dict()
+        self.static = []        #tracking static lights
+        self.dynamic = dict()   #tracking dynamic lights
+        self.meta = dict()      #lighting meta data
         
         for light in bpy.data.collections['dynamicLights'].objects:
 
@@ -66,6 +67,60 @@ class lighting():
             #weed out any erroneous 
             if light.instance_type != 'LIGHT': pass
             self.static.append(light)
+
+    def totalEnergy(self):
+
+        '''returns sum of light energy in seen (watts)'''
+
+        energy = 0
+        for lightName in self.dynamic:
+            light = bpy.data.objects[lightName]
+            energy += copy.copy(light.data.energy)
+
+        for light in self.static:
+            energy += copy.copy(light.data.energy)
+
+        return energy
+            
+    def lightCount(self):
+
+        '''return total number of lights in scene'''
+
+        return len(self.static) + len(self.dynamic.keys())
+
+    def metaData(self):
+
+        '''returns dictionary of lighting metadata'''
+        
+        self.meta['totalEnergy'] = self.totalEnergy()
+        self.meta['lightCount'] = self.lightCount()
+        self.meta['individualMeta'] = dict()
+
+        for lightName in self.dynamic:
+            light = bpy.data.objects[lightName]
+            self.meta['individualMeta'][lightName] = dict()
+            self.meta['individualMeta'][lightName]['type'] = str(light.type)                    #str
+            self.meta['individualMeta'][lightName]['energy'] = copy.copy(light.data.energy)     #float
+            self.meta['individualMeta'][lightName]['x'] = copy.copy(light.location.x)           #float
+            self.meta['individualMeta'][lightName]['y'] = copy.copy(light.location.y)           #float
+            self.meta['individualMeta'][lightName]['z'] = copy.copy(light.location.z)           #float
+            self.meta['individualMeta'][lightName]['r'] = copy.copy(light.color[0])             #float (norm [0, 1])
+            self.meta['individualMeta'][lightName]['g'] = copy.copy(light.color[1])             #float (norm [0, 1])
+            self.meta['individualMeta'][lightName]['b'] = copy.copy(light.color[2])             #float (norm [0, 1])
+                       
+
+        for light in self.static:
+            self.meta['individualMeta']['blenderName'] = dict({light.name:{}})
+            self.meta['individualMeta'][lightName]['type'] = str(light.type)                    #str
+            self.meta['individualMeta'][lightName]['energy'] = copy.copy(light.data.energy)     #float
+            self.meta['individualMeta'][lightName]['x'] = copy.copy(light.location.x)           #float
+            self.meta['individualMeta'][lightName]['y'] = copy.copy(light.location.y)           #float
+            self.meta['individualMeta'][lightName]['z'] = copy.copy(light.location.z)           #float
+            self.meta['individualMeta'][lightName]['r'] = copy.copy(light.color[0])             #float (norm [0, 1])
+            self.meta['individualMeta'][lightName]['g'] = copy.copy(light.color[1])             #float (norm [0, 1])
+            self.meta['individualMeta'][lightName]['b'] = copy.copy(light.color[2])             #float (norm [0, 1])
+
+        return self.meta
 
     def updateIntensity(self, light, domainRandomization):
 
@@ -116,6 +171,8 @@ class camera():
         self.translationPostions = []
         self.rotationPostions = []
 
+        self.meta = dict()
+
     def toggleTracking(self):
 
         '''cann be used to turn on/off tracking at arbitrary point in data collection'''
@@ -132,7 +189,15 @@ class camera():
             tracking.track_axis = 'TRACK_NEGATIVE_Z'
             tracking.up_axis = 'UP_Y'
 
+    def metaData(self):
+        self.meta['x'] = copy.copy(self.cam.location.x)                   #float
+        self.meta['y'] = copy.copy(self.cam.location.y)                   #float
+        self.meta['z'] = copy.copy(self.cam.location.z)                   #float
+        self.meta['theta'] = copy.copy(self.cam.rotation_euler[0])        #float
+        self.meta['phi'] = copy.copy(self.cam.rotation_euler[1])          #float
+        self.meta['omega'] = copy.copy(self.cam.rotation_euler[2])        #float
 
+        return self.meta
 
 
 class classifications():
@@ -145,6 +210,7 @@ class classifications():
     def __init__(self):
 
         self.classObjects = dict()
+        self.meta = dict()
        
         #iterate through objects looking for ones with a classification
         for obj in bpy.data.objects:
@@ -207,6 +273,34 @@ class classifications():
                     count += 1
                 
             except: pass  
+
+    def metaData(self):
+
+        '''return meta dict for all objects of interest in scene'''
+        
+        for objName in self.classObjects.keys():
+            obj = bpy.data.objects[objName]
+            self.meta[objName] = dict()
+            self.meta[objName]['x'] = copy.copy(obj.location.x)              #float
+            self.meta[objName]['y'] = copy.copy(obj.location.y)              #float
+            self.meta[objName]['z'] = copy.copy(obj.location.z)              #float
+            self.meta[objName]['theta'] = copy.copy(obj.rotation_euler[0])   #float
+            self.meta[objName]['phi'] = copy.copy(obj.rotation_euler[1])     #float
+            self.meta[objName]['omega'] = copy.copy(obj.rotation_euler[2])   #float
+
+        
+            #This needs changed, calling [1] is due to how i'm handling the class objects dict, which could be written better
+            depObj = self.classObjects[objName][1]['partDependency']
+            if depObj != None:
+                self.meta[objName]['partDependency'] = depObj.name                       #bpy struct
+                self.meta[objName]['partDependency_x'] = depObj.location.x               #float
+                self.meta[objName]['partDependency_y'] = depObj.location.y               #float
+                self.meta[objName]['partDependency_z'] = depObj.location.z               #float
+                self.meta[objName]['partDependency_theta'] = depObj.rotation_euler[0]    #float
+                self.meta[objName]['partDependency_phi'] = depObj.rotation_euler[1]      #float
+                self.meta[objName]['partDependency_omega'] = depObj.rotation_euler[2]    #float
+
+        return self.meta
 
               
 
@@ -338,7 +432,7 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             [ ] get camera rotating
                 [ ] add rotation to generated postions
                 [ ] uniform
-                [ ] normal 
+                [ ] normal location.x
             [X] get lights moving
                 [x] follow postions
                 [x] return home
@@ -525,17 +619,13 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             objPositions = classObjs.classObjects[object][klass]['positions']
             if objPositions and objPositions != []:
                 position = objPositions[i - idxShift]
-                bt.updateAbsPosition(obj, [position], 0)
-            
-         
+                bt.updateAbsPosition(obj, [position], 0)   
+
             #if dependency that will move
             dependency = classObjs.classObjects[object][klass]['partDependency']    #object pointer
             if dependency:
                 position = classObjs.classObjects[object][klass]['dependencyPositions'][i - idxShift]   #[x, y, z]
                 bt.updateAbsPosition(dependency, [position], 0)
-            
-           
-
             
             #Logic to handle custom bboxes for vert projections
             if classObjs.classObjects[object][klass]['customBBox']:
@@ -556,6 +646,18 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
             #write instance to csv                                         Ax    Ay    Bx    By    Cx    Cy    Dx    Dy
             instance = [None, str(i) + paths['fileName'] + ".png", label, None, None, None, None, None, None, None, None, cam.cam.location.x, cam.cam.location.y, cam.cam.location.z]
             data.writerow(instance)
+
+            
+            metaJson = dict()
+            metaJson['imagePath'] = str(i) + paths['fileName'] + ".png"
+            metaJson['lights'] = lights.metaData()
+            metaJson['camera'] = cam.metaData()
+            metaJson['objects'] = classObjs.metaData()
+            metaPath = paths['descriptionJson'] + str(i) + paths['fileName'] + '.json'
+            metaJson = json.dumps(metaJson, indent=4)
+            meta = open(metaPath, 'w')
+            meta.write(metaJson)
+
             
         #append image array to full render set array
         setCoordinates.append(frameCoordinates)    
@@ -624,12 +726,12 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 if __name__ == "__main__":
 
     renders = dict({
-                    'count':    2,
+                    'count':    10,
                     })
     
     paths = dict()
     paths['fileName'] =     'testingChange1'
-    paths['root'] =         '/media/tuna/Pauls_USBA/adas/' + paths['fileName'] + '/'
+    paths['root'] =         '/home/tuna/Documents/driving/Vision/syntheticData/dataSets/ADAS/' + paths['fileName'] + '/'
     paths['renders'] =      paths['root'] + 'renders/'
     paths['csv'] =          paths['root'] + 'csvFile/'
     paths['jsonFile']=      paths['root'] + 'jsonFile/'
@@ -746,6 +848,7 @@ if __name__ == "__main__":
                         'imageIDs':             []                                      #                               list of image names
                             
     })
+
 
 
     main(renderInfo=            renders,
