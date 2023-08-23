@@ -65,7 +65,7 @@ class lighting():
 
         for light in bpy.data.collections['staticLights'].objects:
             #weed out any erroneous 
-            if light.instance_type != 'LIGHT': pass
+            if light.instance_type != "LIGHT": pass
             self.static.append(light)
 
     def totalEnergy(self):
@@ -99,7 +99,7 @@ class lighting():
         for lightName in self.dynamic:
             light = bpy.data.objects[lightName]
             self.meta['individualMeta'][lightName] = dict()
-            self.meta['individualMeta'][lightName]['type'] = str(light.type)                    #str
+            self.meta['individualMeta'][lightName]['type'] = str(light.data.type)                    #str
             self.meta['individualMeta'][lightName]['energy'] = copy.copy(light.data.energy)     #float
             self.meta['individualMeta'][lightName]['x'] = copy.copy(light.location.x)           #float
             self.meta['individualMeta'][lightName]['y'] = copy.copy(light.location.y)           #float
@@ -110,8 +110,9 @@ class lighting():
                        
 
         for light in self.static:
-            self.meta['individualMeta']['blenderName'] = dict({light.name:{}})
-            self.meta['individualMeta'][lightName]['type'] = str(light.type)                    #str
+            lightName = light.name
+            self.meta['individualMeta'][lightName] = dict()
+            self.meta['individualMeta'][lightName]['type'] = str(light.data.type)                    #str
             self.meta['individualMeta'][lightName]['energy'] = copy.copy(light.data.energy)     #float
             self.meta['individualMeta'][lightName]['x'] = copy.copy(light.location.x)           #float
             self.meta['individualMeta'][lightName]['y'] = copy.copy(light.location.y)           #float
@@ -190,6 +191,8 @@ class camera():
             tracking.up_axis = 'UP_Y'
 
     def metaData(self):
+        self.meta['focalLength'] = self.cam.data.lens                     #float
+        self.meta['sensorWidth'] = self.cam.data.sensor_width             #float
         self.meta['x'] = copy.copy(self.cam.location.x)                   #float
         self.meta['y'] = copy.copy(self.cam.location.y)                   #float
         self.meta['z'] = copy.copy(self.cam.location.z)                   #float
@@ -375,12 +378,13 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
     #generate dynamic camera translation positions
     if cameraParams['translation']['active']:
         randomType = cameraParams['translation']['random']['method']
-        
+        print(f'randomtype:{randomType}')
         cam.translationPostions = bt.generatePositions(constraintObj=      cam.constraint, 
                                                         dynamicObj=     cam.cam, 
                                                         randomType=     randomType, 
                                                         count=          renderCount
                                                         )
+        print(f'generrated postions')
         #storing positions for description json
         cameraParams['translation']['positions'] = cam.translationPostions
     
@@ -649,7 +653,9 @@ def main(renderInfo, cameraParams, domainRandomization, paths):
 
             
             metaJson = dict()
-            metaJson['imagePath'] = str(i) + paths['fileName'] + ".png"
+            metaJson['imagePath'] = paths['renders'] + str(i) + paths['fileName'] + ".png"
+            metaJson['resolutionX'] = scene.render.resolution_x
+            metaJson['resolutionY'] = scene.render.resolution_y
             metaJson['lights'] = lights.metaData()
             metaJson['camera'] = cam.metaData()
             metaJson['objects'] = classObjs.metaData()
@@ -730,8 +736,8 @@ if __name__ == "__main__":
                     })
     
     paths = dict()
-    paths['fileName'] =     'testingChange1'
-    paths['root'] =         '/home/tuna/Documents/driving/Vision/syntheticData/dataSets/ADAS/' + paths['fileName'] + '/'
+    paths['fileName'] =     't1'
+    paths['root'] =         '/home/tuna/Documents/driving/Vision/syntheticData/dataSets/parameterize/' + paths['fileName'] + '/'
     paths['renders'] =      paths['root'] + 'renders/'
     paths['csv'] =          paths['root'] + 'csvFile/'
     paths['jsonFile']=      paths['root'] + 'jsonFile/'
@@ -760,7 +766,7 @@ if __name__ == "__main__":
                     
                         'translation': 
                                 {
-                                'active':           False,                               # [<True>, <False>]           if set to True, camera translate within constraint **must have a constraint**
+                                'active':           True,                               # [<True>, <False>]           if set to True, camera translate within constraint **must have a constraint**
                                 'random':          
                                     { 
                                     'method':       'uniform',                           # [<'uniform'>, <'normal'>]   Uniform/Normal random distributions
